@@ -8,12 +8,12 @@
  *
  * 🟢 You can import this file directly.
  */
-export type * from './models/User.ts'
-export type * from './models/WorkoutPlan.ts'
-export type * from './models/WorkoutDay.ts'
-export type * from './models/WorkoutExercise.ts'
-export type * from './models/WorkoutSession.ts'
-export type * from './models/Session.ts'
-export type * from './models/Account.ts'
-export type * from './models/Verification.ts'
-export type * from './commonInputTypes.ts'
+export type * from './models/User.js'
+export type * from './models/WorkoutPlan.js'
+export type * from './models/WorkoutDay.js'
+export type * from './models/WorkoutExercise.js'
+export type * from './models/WorkoutSession.js'
+export type * from './models/Session.js'
+export type * from './models/Account.js'
+export type * from './models/Verification.js'
+export type * from './commonInputTypes.js'
