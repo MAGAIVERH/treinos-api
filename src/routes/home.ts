@@ -3,10 +3,10 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import z from "zod";
 
-import { NotFoundError } from "../errors/index.ts";
-import { auth } from "../lib/auth.ts";
-import { ErrorSchema, HomeDataSchema } from "../schemas/index.ts";
-import { GetHomeData } from "../usecases/GetHomeData.ts";
+import { NotFoundError } from "../errors/index.js";
+import { auth } from "../lib/auth.js";
+import { ErrorSchema, HomeDataSchema } from "../schemas/index.js";
+import { GetHomeData } from "../usecases/GetHomeData.js";
 
 export const homeRoutes = async (app: FastifyInstance) => {
   app.withTypeProvider<ZodTypeProvider>().route({

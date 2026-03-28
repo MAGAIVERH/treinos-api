@@ -2,10 +2,10 @@ import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 
-import { NotFoundError } from "../errors/index.ts";
-import { auth } from "../lib/auth.ts";
-import { ErrorSchema, StatsQuerySchema, StatsSchema } from "../schemas/index.ts";
-import { GetStats } from "../usecases/GetStats.ts";
+import { NotFoundError } from "../errors/index.js";
+import { auth } from "../lib/auth.js";
+import { ErrorSchema, StatsQuerySchema, StatsSchema } from "../schemas/index.js";
+import { GetStats } from "../usecases/GetStats.js";
 
 export const statsRoutes = async (app: FastifyInstance) => {
   app.withTypeProvider<ZodTypeProvider>().route({

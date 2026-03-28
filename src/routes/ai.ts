@@ -6,12 +6,12 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import z from "zod";
 
-import { WeekDay } from "../generated/prisma/enums.ts";
-import { auth } from "../lib/auth.ts";
-import { CreateWorkoutPlan } from "../usecases/CreateWorkoutPlan.ts";
-import { GetUserTrainData } from "../usecases/GetUserTrainData.ts";
-import { ListWorkoutPlans } from "../usecases/ListWorkoutPlans.ts";
-import { UpsertUserTrainData } from "../usecases/UpsertUserTrainData.ts";
+import { WeekDay } from "../generated/prisma/enums.js";
+import { auth } from "../lib/auth.js";
+import { CreateWorkoutPlan } from "../usecases/CreateWorkoutPlan.js";
+import { GetUserTrainData } from "../usecases/GetUserTrainData.js";
+import { ListWorkoutPlans } from "../usecases/ListWorkoutPlans.js";
+import { UpsertUserTrainData } from "../usecases/UpsertUserTrainData.js";
 
 const SYSTEM_PROMPT = `Você é um personal trainer virtual especialista em montagem de planos de treino personalizados.
 

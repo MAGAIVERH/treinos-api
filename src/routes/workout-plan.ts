@@ -7,8 +7,8 @@ import {
   NotFoundError,
   SessionAlreadyStartedError,
   WorkoutPlanNotActiveError,
-} from "../errors/index.ts";
-import { auth } from "../lib/auth.ts";
+} from "../errors/index.js";
+import { auth } from "../lib/auth.js";
 import {
   ErrorSchema,
   GetWorkoutDaySchema,
@@ -19,13 +19,13 @@ import {
   UpdateWorkoutSessionBodySchema,
   UpdateWorkoutSessionSchema,
   WorkoutPlanSchema,
-} from "../schemas/index.ts";
-import { CreateWorkoutPlan } from "../usecases/CreateWorkoutPlan.ts";
-import { GetWorkoutDay } from "../usecases/GetWorkoutDay.ts";
-import { GetWorkoutPlan } from "../usecases/GetWorkoutPlan.ts";
-import { ListWorkoutPlans } from "../usecases/ListWorkoutPlans.ts";
-import { StartWorkoutSession } from "../usecases/StartWorkoutSession.ts";
-import { UpdateWorkoutSession } from "../usecases/UpdateWorkoutSession.ts";
+} from "../schemas/index.js";
+import { CreateWorkoutPlan } from "../usecases/CreateWorkoutPlan.js";
+import { GetWorkoutDay } from "../usecases/GetWorkoutDay.js";
+import { GetWorkoutPlan } from "../usecases/GetWorkoutPlan.js";
+import { ListWorkoutPlans } from "../usecases/ListWorkoutPlans.js";
+import { StartWorkoutSession } from "../usecases/StartWorkoutSession.js";
+import { UpdateWorkoutSession } from "../usecases/UpdateWorkoutSession.js";
 
 export const workoutPlanRoutes = async (app: FastifyInstance) => {
   app.withTypeProvider<ZodTypeProvider>().route({

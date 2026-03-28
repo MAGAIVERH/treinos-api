@@ -1,5 +1,5 @@
-import { WeekDay } from "../generated/prisma/enums.ts";
-import { prisma } from "../lib/db.ts";
+import { WeekDay } from "../generated/prisma/enums.js";
+import { prisma } from "../lib/db.js";
 
 interface InputDto {
   userId: string;

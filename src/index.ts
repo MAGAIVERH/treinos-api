@@ -12,13 +12,13 @@ import {
 } from "fastify-type-provider-zod";
 import z from "zod";
 
-import { auth } from "./lib/auth.ts";
-import { env } from "./lib/env.ts";
-import { aiRoutes } from "./routes/ai.ts";
-import { homeRoutes } from "./routes/home.ts";
-import { meRoutes } from "./routes/me.ts";
-import { statsRoutes } from "./routes/stats.ts";
-import { workoutPlanRoutes } from "./routes/workout-plan.ts";
+import { auth } from "./lib/auth.js";
+import { env } from "./lib/env.js";
+import { aiRoutes } from "./routes/ai.js";
+import { homeRoutes } from "./routes/home.js";
+import { meRoutes } from "./routes/me.js";
+import { statsRoutes } from "./routes/stats.js";
+import { workoutPlanRoutes } from "./routes/workout-plan.js";
 
 const envToLogger = {
   development: {
