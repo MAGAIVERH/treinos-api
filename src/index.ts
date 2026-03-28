@@ -2,7 +2,6 @@ import "dotenv/config";
 
 import fastifyCors from "@fastify/cors";
 import fastifySwagger from "@fastify/swagger";
-import fastifyApiReference from "@scalar/fastify-api-reference";
 import Fastify from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import {
@@ -63,28 +62,6 @@ await app.register(fastifyCors, {
   credentials: true,
 });
 
-if (env.NODE_ENV === "development") {
-  await app.register(fastifyApiReference, {
-    routePrefix: "/docs",
-    configuration: {
-      sources: [
-        {
-          title: "Bootcamp Treinos API",
-          slug: "bootcamp-treinos-api",
-          url: "/swagger.json",
-        },
-        {
-          title: "Auth API",
-          slug: "auth-api",
-          url: "/api/auth/open-api/generate-schema",
-        },
-      ],
-    },
-  });
-}
-
-// RESTful
-// Routes
 await app.register(homeRoutes, { prefix: "/home" });
 await app.register(meRoutes, { prefix: "/me" });
 await app.register(statsRoutes, { prefix: "/stats" });
@@ -129,23 +106,21 @@ app.route({
   },
   async handler(request, reply) {
     try {
-      // Construct request URL
       const url = new URL(request.url, `http://${request.headers.host}`);
 
-      // Convert Fastify headers to standard Headers object
       const headers = new Headers();
       Object.entries(request.headers).forEach(([key, value]) => {
         if (value) headers.append(key, value.toString());
       });
-      // Create Fetch API-compatible request
+
       const req = new Request(url.toString(), {
         method: request.method,
         headers,
         ...(request.body ? { body: JSON.stringify(request.body) } : {}),
       });
-      // Process authentication request
+
       const response = await auth.handler(req);
-      // Forward response to client
+
       reply.status(response.status);
       response.headers.forEach((value, key) => reply.header(key, value));
       reply.send(response.body ? await response.text() : null);
@@ -160,7 +135,7 @@ app.route({
 });
 
 try {
-  await app.listen({ host: "0.0.0.0", port: env.PORT });
+  await app.listen({ port: 8081 });
 } catch (err) {
   app.log.error(err);
   process.exit(1);
