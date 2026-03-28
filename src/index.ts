@@ -63,23 +63,25 @@ await app.register(fastifyCors, {
   credentials: true,
 });
 
-await app.register(fastifyApiReference, {
-  routePrefix: "/docs",
-  configuration: {
-    sources: [
-      {
-        title: "Bootcamp Treinos API",
-        slug: "bootcamp-treinos-api",
-        url: "/swagger.json",
-      },
-      {
-        title: "Auth API",
-        slug: "auth-api",
-        url: "/api/auth/open-api/generate-schema",
-      },
-    ],
-  },
-});
+if (env.NODE_ENV === "development") {
+  await app.register(fastifyApiReference, {
+    routePrefix: "/docs",
+    configuration: {
+      sources: [
+        {
+          title: "Bootcamp Treinos API",
+          slug: "bootcamp-treinos-api",
+          url: "/swagger.json",
+        },
+        {
+          title: "Auth API",
+          slug: "auth-api",
+          url: "/api/auth/open-api/generate-schema",
+        },
+      ],
+    },
+  });
+}
 
 // RESTful
 // Routes
