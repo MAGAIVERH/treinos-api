@@ -118,13 +118,24 @@ app.route({
         ...(request.body ? { body: JSON.stringify(request.body) } : {}),
       });
 
+      // LOG temporário para debug
+      console.log("AUTH REQUEST URL:", url.toString());
+      console.log("AUTH REQUEST METHOD:", request.method);
+
       const response = await auth.handler(req);
+
+      // LOG temporário para debug
+      console.log("AUTH RESPONSE STATUS:", response.status);
+      console.log("AUTH RESPONSE HEADERS:", Object.fromEntries(response.headers.entries()));
 
       reply.status(response.status);
       response.headers.forEach((value, key) => reply.header(key, value));
 
-      // ← aqui está a correção: trata redirect (body vazio) corretamente
       const responseText = await response.text();
+
+      // LOG temporário para debug
+      console.log("AUTH RESPONSE BODY:", responseText);
+
       reply.send(responseText || null);
     } catch (error) {
       app.log.error(error);
