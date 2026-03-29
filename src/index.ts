@@ -112,10 +112,6 @@ app.route({
 
       const response = await auth.handler(req);
 
-      // ← logs aqui, depois de response estar declarado
-      console.log("AUTH RESPONSE STATUS:", response.status);
-      console.log("AUTH RESPONSE HEADERS:", Object.fromEntries(response.headers.entries()));
-
       reply.status(response.status);
 
       const setCookieValues: string[] = [];
@@ -131,12 +127,14 @@ app.route({
         reply.header("set-cookie", setCookieValues);
       }
 
-      console.log("SET-COOKIE HEADERS:", setCookieValues);
+      // ← Fix principal: redirects não devem ter body
+      const isRedirect = response.status >= 300 && response.status < 400;
+      if (isRedirect) {
+        reply.send("");
+        return;
+      }
 
       const responseText = await response.text();
-
-      console.log("AUTH RESPONSE BODY:", responseText);
-
       reply.send(responseText || null);
     } catch (error) {
       app.log.error(error);
