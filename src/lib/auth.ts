@@ -12,6 +12,7 @@ export const auth = betterAuth({
     google: {
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
+      pkce: true, // ← usa PKCE em vez de cookie para o state
     },
   },
   database: prismaAdapter(prisma, {
