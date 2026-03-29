@@ -104,7 +104,7 @@ app.route({
   async handler(request, reply) {
     try {
       const { auth } = await import("./lib/auth.js");
-
+      console.log("AUTH COOKIES:", request.headers.cookie);
       const url = new URL(request.url, `https://${request.headers.host}`);
 
       const headers = new Headers();

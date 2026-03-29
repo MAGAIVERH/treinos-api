@@ -32,10 +32,8 @@ export const auth = betterAuth({
       secure: true,
       httpOnly: true,
       path: "/",
-      partitioned: false,
     },
     useSecureCookies: env.NODE_ENV === "production",
     disableCSRFCheck: false,
-    generateId: () => crypto.randomUUID(),
   },
 });
