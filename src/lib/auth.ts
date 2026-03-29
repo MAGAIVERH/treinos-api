@@ -1,6 +1,5 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { openAPI } from "better-auth/plugins";
 
 import { prisma } from "./db.js";
 import { env } from "./env.js";
@@ -17,11 +16,15 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
-  plugins: [openAPI()],
   advanced: {
     crossSubDomainCookies: {
-      enabled: true,
-      domain: env.NODE_ENV === "production" ? ".onrender.com" : undefined,
+      enabled: false,
+    },
+    defaultCookieAttributes: {
+      sameSite: env.NODE_ENV === "production" ? "none" : "lax",
+      secure: env.NODE_ENV === "production",
+      httpOnly: true,
+      path: "/",
     },
   },
 });

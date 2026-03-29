@@ -11,7 +11,6 @@ import {
 } from "fastify-type-provider-zod";
 import z from "zod";
 
-import { auth } from "./lib/auth.js";
 import { env } from "./lib/env.js";
 import { aiRoutes } from "./routes/ai.js";
 import { homeRoutes } from "./routes/home.js";
@@ -106,6 +105,8 @@ app.route({
   },
   async handler(request, reply) {
     try {
+      const { auth } = await import("./lib/auth.js");
+
       const url = new URL(request.url, `http://${request.headers.host}`);
 
       const headers = new Headers();
