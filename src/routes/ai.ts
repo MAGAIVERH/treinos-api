@@ -54,6 +54,7 @@ Escolha a divisão adequada com base nos dias disponíveis:
 - Descanso entre séries: 60-90s (hipertrofia), 2-3min (compostos pesados)
 - Evitar treinar o mesmo grupo muscular em dias consecutivos
 - Nomes descritivos para cada dia (ex: "Superior A - Peito e Costas", "Descanso")
+-Informe apos finalizar a criacao do treino com sucesso para o usuario clicar no botao no canto superior direito (ACESSAR FIT.AI) para visualizar seu treino.
 
 ### Imagens de Capa (coverImageUrl)
 
