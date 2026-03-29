@@ -28,13 +28,14 @@ export const auth = betterAuth({
       enabled: false,
     },
     defaultCookieAttributes: {
-      sameSite: env.NODE_ENV === "production" ? "none" : "lax",
-      secure: env.NODE_ENV === "production",
+      sameSite: "none",
+      secure: true,
       httpOnly: true,
       path: "/",
+      partitioned: false,
     },
-    // ← isso força o estado OAuth a ser salvo no banco em vez de cookie
     useSecureCookies: env.NODE_ENV === "production",
     disableCSRFCheck: false,
+    generateId: () => crypto.randomUUID(),
   },
 });

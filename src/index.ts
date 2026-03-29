@@ -109,7 +109,13 @@ app.route({
 
       const headers = new Headers();
       Object.entries(request.headers).forEach(([key, value]) => {
-        if (value) headers.append(key, value.toString());
+        if (value) {
+          if (Array.isArray(value)) {
+            value.forEach((v) => headers.append(key, v));
+          } else {
+            headers.append(key, value);
+          }
+        }
       });
 
       const req = new Request(url.toString(), {
@@ -118,24 +124,12 @@ app.route({
         ...(request.body ? { body: JSON.stringify(request.body) } : {}),
       });
 
-      // LOG temporário para debug
-      console.log("AUTH REQUEST URL:", url.toString());
-      console.log("AUTH REQUEST METHOD:", request.method);
-
       const response = await auth.handler(req);
-
-      // LOG temporário para debug
-      console.log("AUTH RESPONSE STATUS:", response.status);
-      console.log("AUTH RESPONSE HEADERS:", Object.fromEntries(response.headers.entries()));
 
       reply.status(response.status);
       response.headers.forEach((value, key) => reply.header(key, value));
 
       const responseText = await response.text();
-
-      // LOG temporário para debug
-      console.log("AUTH RESPONSE BODY:", responseText);
-
       reply.send(responseText || null);
     } catch (error) {
       app.log.error(error);
