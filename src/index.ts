@@ -105,7 +105,7 @@ app.route({
     try {
       const { auth } = await import("./lib/auth.js");
 
-      const url = new URL(request.url, `http://${request.headers.host}`);
+      const url = new URL(request.url, `https://${request.headers.host}`);
 
       const headers = new Headers();
       Object.entries(request.headers).forEach(([key, value]) => {
@@ -122,7 +122,10 @@ app.route({
 
       reply.status(response.status);
       response.headers.forEach((value, key) => reply.header(key, value));
-      reply.send(response.body ? await response.text() : null);
+
+      // ← aqui está a correção: trata redirect (body vazio) corretamente
+      const responseText = await response.text();
+      reply.send(responseText || null);
     } catch (error) {
       app.log.error(error);
       reply.status(500).send({
