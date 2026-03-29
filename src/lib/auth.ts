@@ -6,7 +6,7 @@ import { env } from "./env.js";
 
 export const auth = betterAuth({
   baseURL: env.API_BASE_URL,
-  secret: env.BETTER_AUTH_SECRET, // ← adicione isso
+  secret: env.BETTER_AUTH_SECRET,
   trustedOrigins: [env.WEB_APP_BASE_URL],
   socialProviders: {
     google: {
@@ -33,5 +33,8 @@ export const auth = betterAuth({
       httpOnly: true,
       path: "/",
     },
+    // ← isso força o estado OAuth a ser salvo no banco em vez de cookie
+    useSecureCookies: env.NODE_ENV === "production",
+    disableCSRFCheck: false,
   },
 });
