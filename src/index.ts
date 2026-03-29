@@ -104,7 +104,7 @@ app.route({
   async handler(request, reply) {
     try {
       const { auth } = await import("./lib/auth.js");
-      console.log("AUTH COOKIES:", request.headers.cookie);
+
       const url = new URL(request.url, `https://${request.headers.host}`);
 
       const headers = new Headers();
@@ -127,7 +127,23 @@ app.route({
       const response = await auth.handler(req);
 
       reply.status(response.status);
-      response.headers.forEach((value, key) => reply.header(key, value));
+
+      // ← Fix: Set-Cookie pode ter múltiplos valores, precisa usar raw headers
+      const setCookieValues: string[] = [];
+      response.headers.forEach((value, key) => {
+        if (key.toLowerCase() === "set-cookie") {
+          setCookieValues.push(value);
+        } else {
+          reply.header(key, value);
+        }
+      });
+
+      // ← Envia todos os Set-Cookie como array
+      if (setCookieValues.length > 0) {
+        reply.header("set-cookie", setCookieValues);
+      }
+
+      console.log("SET-COOKIE HEADERS:", setCookieValues);
 
       const responseText = await response.text();
       reply.send(responseText || null);
