@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import type { IncomingMessage, ServerResponse } from "node:http";
+
 import fastifyCors from "@fastify/cors";
 import fastifySwagger from "@fastify/swagger";
 import Fastify from "fastify";
@@ -18,8 +20,10 @@ import { meRoutes } from "./routes/me.js";
 import { statsRoutes } from "./routes/stats.js";
 import { workoutPlanRoutes } from "./routes/workout-plan.js";
 
-const envToLogger = {
-  development: {
+const app = Fastify({
+  // Em produção (Vercel) o logger true causa problemas de serialização,
+  // deixamos false e usamos o log da própria plataforma
+  logger: env.NODE_ENV !== "production" && {
     transport: {
       target: "pino-pretty",
       options: {
@@ -28,12 +32,6 @@ const envToLogger = {
       },
     },
   },
-  production: true,
-  test: false,
-};
-
-const app = Fastify({
-  logger: envToLogger[env.NODE_ENV],
 });
 
 app.setValidatorCompiler(validatorCompiler);
@@ -135,9 +133,11 @@ app.route({
   },
 });
 
-try {
-  await app.listen({ port: 3000 });
-} catch (err) {
-  app.log.error(err);
-  process.exit(1);
+// ✅ Chave da correção: ready() em vez de listen()
+// Na Vercel não existe processo contínuo, então nunca chamamos listen()
+await app.ready();
+
+// ✅ Exporta o handler para a Vercel invocar a cada request
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
+  app.server.emit("request", req, res);
 }
