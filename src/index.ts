@@ -21,8 +21,6 @@ import { statsRoutes } from "./routes/stats.js";
 import { workoutPlanRoutes } from "./routes/workout-plan.js";
 
 const app = Fastify({
-  // Em produção (Vercel) o logger true causa problemas de serialização,
-  // deixamos false e usamos o log da própria plataforma
   logger: env.NODE_ENV !== "production" && {
     transport: {
       target: "pino-pretty",
@@ -68,12 +66,8 @@ await app.register(aiRoutes, { prefix: "/ai" });
 app.withTypeProvider<ZodTypeProvider>().route({
   method: "GET",
   url: "/swagger.json",
-  schema: {
-    hide: true,
-  },
-  handler: async () => {
-    return app.swagger();
-  },
+  schema: { hide: true },
+  handler: async () => app.swagger(),
 });
 
 app.withTypeProvider<ZodTypeProvider>().route({
@@ -83,24 +77,16 @@ app.withTypeProvider<ZodTypeProvider>().route({
     description: "Hello world",
     tags: ["Hello World"],
     response: {
-      200: z.object({
-        message: z.string(),
-      }),
+      200: z.object({ message: z.string() }),
     },
   },
-  handler: () => {
-    return {
-      message: "Hello World",
-    };
-  },
+  handler: () => ({ message: "Hello World" }),
 });
 
 app.route({
   method: ["GET", "POST"],
   url: "/api/auth/*",
-  schema: {
-    hide: true,
-  },
+  schema: { hide: true },
   async handler(request, reply) {
     try {
       const { auth } = await import("./lib/auth.js");
@@ -126,9 +112,12 @@ app.route({
 
       const response = await auth.handler(req);
 
+      // ← logs aqui, depois de response estar declarado
+      console.log("AUTH RESPONSE STATUS:", response.status);
+      console.log("AUTH RESPONSE HEADERS:", Object.fromEntries(response.headers.entries()));
+
       reply.status(response.status);
 
-      // ← Fix: Set-Cookie pode ter múltiplos valores, precisa usar raw headers
       const setCookieValues: string[] = [];
       response.headers.forEach((value, key) => {
         if (key.toLowerCase() === "set-cookie") {
@@ -138,7 +127,6 @@ app.route({
         }
       });
 
-      // ← Envia todos os Set-Cookie como array
       if (setCookieValues.length > 0) {
         reply.header("set-cookie", setCookieValues);
       }
@@ -146,6 +134,9 @@ app.route({
       console.log("SET-COOKIE HEADERS:", setCookieValues);
 
       const responseText = await response.text();
+
+      console.log("AUTH RESPONSE BODY:", responseText);
+
       reply.send(responseText || null);
     } catch (error) {
       app.log.error(error);
@@ -157,11 +148,8 @@ app.route({
   },
 });
 
-// ✅ Chave da correção: ready() em vez de listen()
-// Na Vercel não existe processo contínuo, então nunca chamamos listen()
 await app.ready();
 
-// ✅ Exporta o handler para a Vercel invocar a cada request
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   app.server.emit("request", req, res);
 }
