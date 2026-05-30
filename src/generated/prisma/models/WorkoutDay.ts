@@ -220,7 +220,7 @@ export type WorkoutDayGroupByOutputType = {
   _max: WorkoutDayMaxAggregateOutputType | null
 }
 
-type GetWorkoutDayGroupByPayload<T extends WorkoutDayGroupByArgs> = Prisma.PrismaPromise<
+export type GetWorkoutDayGroupByPayload<T extends WorkoutDayGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<WorkoutDayGroupByOutputType, T['by']> &
       {
@@ -1557,6 +1557,11 @@ export type WorkoutDayFindManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Skip the first `n` WorkoutDays.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of WorkoutDays.
+   */
   distinct?: Prisma.WorkoutDayScalarFieldEnum | Prisma.WorkoutDayScalarFieldEnum[]
 }
 

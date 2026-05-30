@@ -189,3 +189,28 @@ export const WorkoutPlanSchema = z.object({
     }),
   ),
 });
+
+export const MessageRoleSchema = z.enum(["user", "assistant", "system"]);
+
+export const UIMessagePartSchema = z.record(z.string(), z.unknown());
+
+export const UIMessageSchema = z.object({
+  id: z.string(),
+  role: MessageRoleSchema,
+  parts: z.array(UIMessagePartSchema),
+});
+
+export const AIChatBodySchema = z.object({
+  messages: z.array(UIMessageSchema),
+});
+
+export const ConversationMessageSchema = z.object({
+  id: z.string(),
+  role: MessageRoleSchema,
+  parts: z.array(UIMessagePartSchema),
+});
+
+export const GetConversationSchema = z.object({
+  conversationId: z.uuid().nullable(),
+  messages: z.array(ConversationMessageSchema),
+});

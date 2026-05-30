@@ -148,6 +148,11 @@ app.route({
 
 await app.ready();
 
+if (env.NODE_ENV !== "production") {
+  await app.listen({ port: env.PORT, host: "0.0.0.0" });
+  console.log(`Server running on http://localhost:${env.PORT}`);
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   app.server.emit("request", req, res);
 }

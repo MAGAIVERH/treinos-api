@@ -4,7 +4,7 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "build": "rm -rf dist && pnpm exec prisma generate && tsc -p tsconfig.build.json",
     "postinstall": "pnpm exec prisma generate",
     "vercel-build": "pnpm exec prisma generate",
@@ -48,6 +48,7 @@
     "eslint-plugin-simple-import-sort": "12.1.1",
     "globals": "^17.4.0",
     "prettier": "3.8.1",
+    "tsx": "^4.22.1",
     "typescript-eslint": "^8.57.0"
   }
 }

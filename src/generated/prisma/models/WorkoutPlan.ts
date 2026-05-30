@@ -165,7 +165,7 @@ export type WorkoutPlanGroupByOutputType = {
   _max: WorkoutPlanMaxAggregateOutputType | null
 }
 
-type GetWorkoutPlanGroupByPayload<T extends WorkoutPlanGroupByArgs> = Prisma.PrismaPromise<
+export type GetWorkoutPlanGroupByPayload<T extends WorkoutPlanGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<WorkoutPlanGroupByOutputType, T['by']> &
       {
@@ -1274,6 +1274,11 @@ export type WorkoutPlanFindManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Skip the first `n` WorkoutPlans.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of WorkoutPlans.
+   */
   distinct?: Prisma.WorkoutPlanScalarFieldEnum | Prisma.WorkoutPlanScalarFieldEnum[]
 }
 

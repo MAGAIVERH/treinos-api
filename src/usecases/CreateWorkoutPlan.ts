@@ -45,6 +45,7 @@ export class CreateWorkoutPlan {
   async execute(dto: InputDto): Promise<OutputDto> {
     const existingWorkoutPlan = await prisma.workoutPlan.findFirst({
       where: {
+        userId: dto.userId,
         isActive: true,
       },
     });
