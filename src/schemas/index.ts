@@ -204,13 +204,16 @@ export const AIChatBodySchema = z.object({
   messages: z.array(UIMessageSchema),
 });
 
+/** Lenient schema for persisted messages (tool parts, reasoning, legacy shapes). */
+export const ConversationMessagePartSchema = z.record(z.string(), z.any());
+
 export const ConversationMessageSchema = z.object({
   id: z.string(),
   role: MessageRoleSchema,
-  parts: z.array(UIMessagePartSchema),
+  parts: z.array(ConversationMessagePartSchema),
 });
 
 export const GetConversationSchema = z.object({
-  conversationId: z.uuid().nullable(),
+  conversationId: z.string().uuid().nullable(),
   messages: z.array(ConversationMessageSchema),
 });
