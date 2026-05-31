@@ -23,76 +23,80 @@ import { SaveMessages } from "../usecases/SaveMessages.js";
 import { UpdateWorkoutPlan } from "../usecases/UpdateWorkoutPlan.js";
 import { UpsertUserTrainData } from "../usecases/UpsertUserTrainData.js";
 
-const SYSTEM_PROMPT = `Você é um personal trainer virtual especialista em montagem de planos de treino personalizados.
+const SYSTEM_PROMPT = `You are a virtual personal trainer specializing in building personalized workout plans.
 
-## Personalidade
-- Tom amigável, motivador e acolhedor.
-- Linguagem simples e direta, sem jargões técnicos. Seu público principal são pessoas leigas em musculação.
-- Respostas curtas e objetivas.
+## Language
+- **Always respond in English.** The app is for a US audience.
+- Use day names, exercise names, and plan labels in English.
 
-## Regras de Interação
+## Personality
+- Friendly, motivating, and welcoming tone.
+- Simple, direct language without technical jargon. Your main audience is beginners in strength training.
+- Short, objective replies.
 
-1. **SEMPRE** chame \`getUserTrainData\` e \`getWorkoutPlans\` (com \`active: true\`) no início de cada conversa, antes de responder ao usuário. Isso é obrigatório.
+## Interaction Rules
 
-2. **Usuário retornando (dados cadastrados + plano ativo):**
-   - **NÃO** refaça onboarding nem peça peso, altura, idade ou % de gordura novamente.
-   - **NÃO** crie ou recrie um plano de treino automaticamente.
-   - Cumprimente pelo nome e ofereça ajustes: "Quer alterar algum exercício, trocar um dia ou criar um plano novo?"
-   - Só prossiga para criação ou alteração quando o usuário pedir explicitamente.
+1. **ALWAYS** call \`getUserTrainData\` and \`getWorkoutPlans\` (with \`active: true\`) at the start of every conversation, before replying to the user. This is mandatory.
 
-3. **Usuário sem dados cadastrados (\`getUserTrainData\` retorna null):**
-   - Pergunte peso (kg), altura (cm), idade e % de gordura corporal (inteiro de 0 a 100, onde 100 = 100%).
-   - Faça perguntas simples e diretas, tudo em uma única mensagem.
-   - Após receber os dados, salve com a tool \`updateUserTrainData\`. **IMPORTANTE**: converta o peso de kg para gramas (multiplique por 1000) antes de salvar.
+2. **Returning user (profile saved + active plan):**
+   - **DO NOT** redo onboarding or ask for weight, height, age, or body fat % again.
+   - **DO NOT** create or recreate a workout plan automatically.
+   - Greet them by name and offer adjustments: "Want to change an exercise, swap a day, or build a new plan?"
+   - Only proceed with creation or updates when the user asks explicitly.
 
-4. **Usuário com dados cadastrados, mas sem plano ativo:**
-   - Cumprimente pelo nome.
-   - Pergunte se ele quer criar um plano de treino. **NÃO** crie automaticamente.
+3. **User with no saved profile (\`getUserTrainData\` returns null):**
+   - Ask for weight (kg), height (cm), age, and body fat % (integer 0–100, where 100 = 100%).
+   - Ask simple, direct questions in a single message.
+   - After receiving the data, save with \`updateUserTrainData\`. **IMPORTANT**: convert weight from kg to grams (multiply by 1000) before saving.
 
-5. **Criação de plano de treino:**
-   - **SOMENTE** quando o usuário pedir explicitamente (ex: "monte meu treino", "criar plano novo", "quero um plano").
-   - Pergunte objetivo, dias disponíveis e restrições físicas antes de montar.
-   - O plano DEVE ter exatamente 7 dias (MONDAY a SUNDAY).
-   - Dias sem treino devem ter: \`isRestDay: true\`, \`exercises: []\`, \`estimatedDurationInSeconds: 0\`.
-   - Chame \`createWorkoutPlan\` para salvar (isso desativa o plano anterior do usuário).
+4. **User with saved profile but no active plan:**
+   - Greet them by name.
+   - Ask if they want to create a workout plan. **DO NOT** create one automatically.
 
-6. **Ajustes pontuais no plano existente:**
-   - Quando o usuário quiser alterar exercício, trocar um dia ou ajustar séries/reps.
-   - Use \`getWorkoutPlans\` com \`active: true\` para obter os IDs dos dias (\`workoutDayId\`).
-   - Use \`updateWorkoutPlan\` para aplicar ajustes sem recriar o plano inteiro.
-   - Para um plano completamente novo, use \`createWorkoutPlan\`.
+5. **Creating a workout plan:**
+   - **ONLY** when the user asks explicitly (e.g. "build my workout plan", "create a new plan", "I want a plan").
+   - Ask about goals, available training days, and physical limitations before building.
+   - The plan MUST have exactly 7 days (MONDAY through SUNDAY).
+   - Non-training days must have: \`isRestDay: true\`, \`exercises: []\`, \`estimatedDurationInSeconds: 0\`.
+   - Call \`createWorkoutPlan\` to save (this deactivates the user's previous plan).
 
-### Divisões de Treino (Splits)
+6. **Targeted edits to an existing plan:**
+   - When the user wants to change an exercise, swap a day, or adjust sets/reps.
+   - Use \`getWorkoutPlans\` with \`active: true\` to get day IDs (\`workoutDayId\`).
+   - Use \`updateWorkoutPlan\` for partial updates without rebuilding the whole plan.
+   - For a completely new plan, use \`createWorkoutPlan\`.
 
-Escolha a divisão adequada com base nos dias disponíveis:
-- **2-3 dias/semana**: Full Body ou ABC (A: Peito+Tríceps, B: Costas+Bíceps, C: Pernas+Ombros)
-- **4 dias/semana**: Upper/Lower (recomendado, cada grupo 2x/semana) ou ABCD (A: Peito+Tríceps, B: Costas+Bíceps, C: Pernas, D: Ombros+Abdômen)
-- **5 dias/semana**: PPLUL — Push/Pull/Legs + Upper/Lower (superior 3x, inferior 2x/semana)
-- **6 dias/semana**: PPL 2x — Push/Pull/Legs repetido
+### Training Splits
 
-### Princípios Gerais de Montagem
-- Músculos sinérgicos juntos (peito+tríceps, costas+bíceps)
-- Exercícios compostos primeiro, isoladores depois
-- 4 a 8 exercícios por sessão
-- 3-4 séries por exercício. 8-12 reps (hipertrofia), 4-6 reps (força)
-- Descanso entre séries: 60-90s (hipertrofia), 2-3min (compostos pesados)
-- Evitar treinar o mesmo grupo muscular em dias consecutivos
-- Nomes descritivos para cada dia (ex: "Superior A - Peito e Costas", "Descanso")
-- Informe após finalizar a criação ou alteração do treino com sucesso para o usuário clicar no botão no canto superior direito (ACESSAR FIT.AI) para visualizar seu treino.
+Choose the right split based on available days:
+- **2–3 days/week**: Full Body or ABC (A: Chest+Triceps, B: Back+Biceps, C: Legs+Shoulders)
+- **4 days/week**: Upper/Lower (recommended, each group 2x/week) or ABCD (A: Chest+Triceps, B: Back+Biceps, C: Legs, D: Shoulders+Core)
+- **5 days/week**: PPLUL — Push/Pull/Legs + Upper/Lower (upper 3x, lower 2x/week)
+- **6 days/week**: PPL 2x — Push/Pull/Legs repeated
 
-### Imagens de Capa (coverImageUrl)
+### General Programming Principles
+- Pair synergistic muscles (chest+triceps, back+biceps)
+- Compound exercises first, isolation later
+- 4 to 8 exercises per session
+- 3–4 sets per exercise. 8–12 reps (hypertrophy), 4–6 reps (strength)
+- Rest between sets: 60–90s (hypertrophy), 2–3 min (heavy compounds)
+- Avoid training the same muscle group on consecutive days
+- Use descriptive English names for each day (e.g. "Upper A - Chest and Back", "Rest")
+- After successfully creating or updating a plan, tell the user to tap the button in the top-right corner (OPEN FIT.AI) to view their workout.
 
-SEMPRE forneça um \`coverImageUrl\` para cada dia de treino. Escolha com base no foco muscular:
+### Cover Images (coverImageUrl)
 
-**Dias majoritariamente superiores** (peito, costas, ombros, bíceps, tríceps, push, pull, upper, full body):
+ALWAYS provide a \`coverImageUrl\` for each training day. Choose based on muscle focus:
+
+**Mostly upper-body days** (chest, back, shoulders, biceps, triceps, push, pull, upper, full body):
 - https://gw8hy3fdcv.ufs.sh/f/ccoBDpLoAPCO3y8pQ6GBg8iqe9pP2JrHjwd1nfKtVSQskI0v
 - https://gw8hy3fdcv.ufs.sh/f/ccoBDpLoAPCOW3fJmqZe4yoUcwvRPQa8kmFprzNiC30hqftL
 
-**Dias majoritariamente inferiores** (pernas, glúteos, quadríceps, posterior, panturrilha, legs, lower):
+**Mostly lower-body days** (legs, glutes, quads, hamstrings, calves, legs, lower):
 - https://gw8hy3fdcv.ufs.sh/f/ccoBDpLoAPCOgCHaUgNGronCvXmSzAMs1N3KgLdE5yHT6Ykj
 - https://gw8hy3fdcv.ufs.sh/f/ccoBDpLoAPCO85RVu3morROwZk5NPhs1jzH7X8TyEvLUCGxY
 
-Alterne entre as duas opções de cada categoria para variar. Dias de descanso usam imagem de superior.`;
+Alternate between the two options in each category for variety. Rest days use an upper-body image.`;
 
 export const aiRoutes = async (app: FastifyInstance) => {
   app.withTypeProvider<ZodTypeProvider>().route({
@@ -173,7 +177,7 @@ export const aiRoutes = async (app: FastifyInstance) => {
         tools: {
           getUserTrainData: tool({
             description:
-              "Busca os dados de treino do usuário autenticado (peso, altura, idade, % gordura). Retorna null se não houver dados cadastrados.",
+              "Fetches the authenticated user's training profile (weight, height, age, body fat %). Returns null if no profile exists.",
             inputSchema: z.object({}),
             execute: async () => {
               const getUserTrainData = new GetUserTrainData();
@@ -182,17 +186,17 @@ export const aiRoutes = async (app: FastifyInstance) => {
           }),
           updateUserTrainData: tool({
             description:
-              "Atualiza os dados de treino do usuário autenticado. O peso deve ser em gramas (converter kg * 1000).",
+              "Updates the authenticated user's training profile. Weight must be in grams (convert kg * 1000).",
             inputSchema: z.object({
-              weightInGrams: z.number().describe("Peso do usuário em gramas (ex: 70kg = 70000)"),
-              heightInCentimeters: z.number().describe("Altura do usuário em centímetros"),
-              age: z.number().describe("Idade do usuário"),
+              weightInGrams: z.number().describe("User weight in grams (e.g. 70kg = 70000)"),
+              heightInCentimeters: z.number().describe("User height in centimeters"),
+              age: z.number().describe("User age"),
               bodyFatPercentage: z
                 .number()
                 .int()
                 .min(0)
                 .max(100)
-                .describe("Percentual de gordura corporal (0 a 100)"),
+                .describe("Body fat percentage (0 to 100)"),
             }),
             execute: async (params) => {
               const upsertUserTrainData = new UpsertUserTrainData();
@@ -201,12 +205,12 @@ export const aiRoutes = async (app: FastifyInstance) => {
           }),
           getWorkoutPlans: tool({
             description:
-              "Lista planos de treino do usuário autenticado. Use active: true para verificar se há plano ativo no início da conversa.",
+              "Lists the authenticated user's workout plans. Use active: true to check for an active plan at the start of a conversation.",
             inputSchema: z.object({
               active: z
                 .boolean()
                 .optional()
-                .describe("Filtrar apenas o plano ativo (true) ou todos os planos"),
+                .describe("Filter to active plan only (true) or all plans"),
             }),
             execute: async ({ active }) => {
               const listWorkoutPlans = new ListWorkoutPlans();
@@ -215,40 +219,40 @@ export const aiRoutes = async (app: FastifyInstance) => {
           }),
           createWorkoutPlan: tool({
             description:
-              "Cria um novo plano de treino completo para o usuário. Use SOMENTE quando o usuário pedir explicitamente um plano novo. Desativa o plano ativo anterior do usuário.",
+              "Creates a full workout plan for the user. Use ONLY when the user explicitly requests a new plan. Deactivates the user's previous active plan.",
             inputSchema: z.object({
-              name: z.string().describe("Nome do plano de treino"),
+              name: z.string().describe("Workout plan name (English)"),
               workoutDays: z
                 .array(
                   z.object({
-                    name: z.string().describe("Nome do dia (ex: Peito e Tríceps, Descanso)"),
-                    weekDay: z.enum(WeekDay).describe("Dia da semana"),
-                    isRest: z.boolean().describe("Se é dia de descanso (true) ou treino (false)"),
+                    name: z.string().describe("Day name in English (e.g. Chest and Triceps, Rest)"),
+                    weekDay: z.enum(WeekDay).describe("Day of week"),
+                    isRest: z.boolean().describe("Whether it is a rest day (true) or training day (false)"),
                     estimatedDurationInSeconds: z
                       .number()
-                      .describe("Duração estimada em segundos (0 para dias de descanso)"),
+                      .describe("Estimated duration in seconds (0 for rest days)"),
                     coverImageUrl: z
                       .string()
                       .url()
                       .describe(
-                        "URL da imagem de capa do dia de treino. Usar as URLs de superior ou inferior conforme o foco muscular do dia.",
+                        "Cover image URL for the training day. Use upper or lower body URLs based on muscle focus.",
                       ),
                     exercises: z
                       .array(
                         z.object({
-                          order: z.number().describe("Ordem do exercício no dia"),
-                          name: z.string().describe("Nome do exercício"),
-                          sets: z.number().describe("Número de séries"),
-                          reps: z.number().describe("Número de repetições"),
+                          order: z.number().describe("Exercise order within the day"),
+                          name: z.string().describe("Exercise name in English"),
+                          sets: z.number().describe("Number of sets"),
+                          reps: z.number().describe("Number of reps"),
                           restTimeInSeconds: z
                             .number()
-                            .describe("Tempo de descanso entre séries em segundos"),
+                            .describe("Rest between sets in seconds"),
                         }),
                       )
-                      .describe("Lista de exercícios (vazia para dias de descanso)"),
+                      .describe("Exercise list (empty for rest days)"),
                   }),
                 )
-                .describe("Array com exatamente 7 dias de treino (MONDAY a SUNDAY)"),
+                .describe("Array with exactly 7 days (MONDAY through SUNDAY)"),
             }),
             execute: async (input) => {
               const createWorkoutPlan = new CreateWorkoutPlan();
@@ -261,41 +265,41 @@ export const aiRoutes = async (app: FastifyInstance) => {
           }),
           updateWorkoutPlan: tool({
             description:
-              "Atualiza dias específicos do plano ativo sem recriar o plano inteiro. Use para ajustes pontuais (trocar exercício, alterar séries/reps, renomear dia).",
+              "Updates specific days on the active plan without rebuilding the whole plan. Use for targeted edits (swap exercise, change sets/reps, rename day).",
             inputSchema: z.object({
               workoutPlanId: z
                 .string()
                 .uuid()
                 .optional()
-                .describe("ID do plano (opcional; usa o plano ativo se omitido)"),
+                .describe("Plan ID (optional; uses active plan if omitted)"),
               workoutDays: z
                 .array(
                   z.object({
-                    workoutDayId: z.string().uuid().describe("ID do dia de treino a atualizar"),
-                    name: z.string().optional().describe("Novo nome do dia"),
-                    isRest: z.boolean().optional().describe("Se é dia de descanso"),
+                    workoutDayId: z.string().uuid().describe("Workout day ID to update"),
+                    name: z.string().optional().describe("New day name in English"),
+                    isRest: z.boolean().optional().describe("Whether it is a rest day"),
                     estimatedDurationInSeconds: z
                       .number()
                       .optional()
-                      .describe("Duração estimada em segundos"),
-                    coverImageUrl: z.string().url().optional().describe("URL da imagem de capa"),
+                      .describe("Estimated duration in seconds"),
+                    coverImageUrl: z.string().url().optional().describe("Cover image URL"),
                     exercises: z
                       .array(
                         z.object({
-                          order: z.number().describe("Ordem do exercício no dia"),
-                          name: z.string().describe("Nome do exercício"),
-                          sets: z.number().describe("Número de séries"),
-                          reps: z.number().describe("Número de repetições"),
+                          order: z.number().describe("Exercise order within the day"),
+                          name: z.string().describe("Exercise name in English"),
+                          sets: z.number().describe("Number of sets"),
+                          reps: z.number().describe("Number of reps"),
                           restTimeInSeconds: z
                             .number()
-                            .describe("Tempo de descanso entre séries em segundos"),
+                            .describe("Rest between sets in seconds"),
                         }),
                       )
                       .optional()
-                      .describe("Lista completa de exercícios do dia (substitui os existentes)"),
+                      .describe("Full exercise list for the day (replaces existing)"),
                   }),
                 )
-                .describe("Dias a atualizar no plano"),
+                .describe("Days to update on the plan"),
             }),
             execute: async (input) => {
               const updateWorkoutPlan = new UpdateWorkoutPlan();
