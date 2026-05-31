@@ -4,6 +4,7 @@ import utc from "dayjs/plugin/utc.js";
 import { NotFoundError } from "../errors/index.js";
 import { WeekDay } from "../generated/prisma/enums.js";
 import { prisma } from "../lib/db.js";
+import { normalizeWorkoutLabel } from "../lib/normalize-workout-label.js";
 
 dayjs.extend(utc);
 
@@ -114,7 +115,7 @@ export class GetHomeData {
           ? {
               workoutPlanId: workoutPlan.id,
               id: todayWorkoutDay.id,
-              name: todayWorkoutDay.name,
+              name: normalizeWorkoutLabel(todayWorkoutDay.name),
               isRestDay: todayWorkoutDay.isRestDay,
               weekDay: todayWorkoutDay.weekDay,
               estimatedDurationInSeconds: todayWorkoutDay.estimatedDurationInSeconds,

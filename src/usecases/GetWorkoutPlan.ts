@@ -1,6 +1,7 @@
 import { NotFoundError } from "../errors/index.js";
 import { WeekDay } from "../generated/prisma/enums.js";
 import { prisma } from "../lib/db.js";
+import { normalizeWorkoutLabel } from "../lib/normalize-workout-label.js";
 
 interface InputDto {
   userId: string;
@@ -42,11 +43,11 @@ export class GetWorkoutPlan {
 
     return {
       id: workoutPlan.id,
-      name: workoutPlan.name,
+      name: normalizeWorkoutLabel(workoutPlan.name),
       workoutDays: workoutPlan.workoutDays.map((day) => ({
         id: day.id,
         weekDay: day.weekDay,
-        name: day.name,
+        name: normalizeWorkoutLabel(day.name),
         isRest: day.isRestDay,
         coverImageUrl: day.coverImageUrl ?? undefined,
         estimatedDurationInSeconds: day.estimatedDurationInSeconds,

@@ -1,5 +1,6 @@
 import { WeekDay } from "../generated/prisma/enums.js";
 import { prisma } from "../lib/db.js";
+import { normalizeWorkoutLabel } from "../lib/normalize-workout-label.js";
 
 interface InputDto {
   userId: string;
@@ -47,11 +48,11 @@ export class ListWorkoutPlans {
 
     return workoutPlans.map((plan) => ({
       id: plan.id,
-      name: plan.name,
+      name: normalizeWorkoutLabel(plan.name),
       isActive: plan.isActive,
       workoutDays: plan.workoutDays.map((day) => ({
         id: day.id,
-        name: day.name,
+        name: normalizeWorkoutLabel(day.name),
         weekDay: day.weekDay,
         isRest: day.isRestDay,
         estimatedDurationInSeconds: day.estimatedDurationInSeconds,
@@ -59,7 +60,7 @@ export class ListWorkoutPlans {
         exercises: day.exercises.map((exercise) => ({
           id: exercise.id,
           order: exercise.order,
-          name: exercise.name,
+          name: normalizeWorkoutLabel(exercise.name),
           sets: exercise.sets,
           reps: exercise.reps,
           restTimeInSeconds: exercise.restTimeInSeconds,

@@ -1,6 +1,7 @@
 import { NotFoundError } from "../errors/index.js";
 import { WeekDay } from "../generated/prisma/enums.js";
 import { prisma } from "../lib/db.js";
+import { normalizeWorkoutLabel } from "../lib/normalize-workout-label.js";
 
 interface InputDto {
   userId: string;
@@ -71,7 +72,9 @@ export class UpdateWorkoutPlan {
         await tx.workoutDay.update({
           where: { id: dayUpdate.workoutDayId },
           data: {
-            ...(dayUpdate.name !== undefined ? { name: dayUpdate.name } : {}),
+            ...(dayUpdate.name !== undefined
+              ? { name: normalizeWorkoutLabel(dayUpdate.name) }
+              : {}),
             ...(dayUpdate.isRest !== undefined ? { isRestDay: dayUpdate.isRest } : {}),
             ...(dayUpdate.estimatedDurationInSeconds !== undefined
               ? { estimatedDurationInSeconds: dayUpdate.estimatedDurationInSeconds }
@@ -92,7 +95,7 @@ export class UpdateWorkoutPlan {
               data: dayUpdate.exercises.map((exercise) => ({
                 id: crypto.randomUUID(),
                 workoutDayId: dayUpdate.workoutDayId,
-                name: exercise.name,
+                name: normalizeWorkoutLabel(exercise.name),
                 order: exercise.order,
                 sets: exercise.sets,
                 reps: exercise.reps,
@@ -120,10 +123,10 @@ export class UpdateWorkoutPlan {
 
       return {
         id: result.id,
-        name: result.name,
+        name: normalizeWorkoutLabel(result.name),
         workoutDays: result.workoutDays.map((day) => ({
           id: day.id,
-          name: day.name,
+          name: normalizeWorkoutLabel(day.name),
           weekDay: day.weekDay,
           isRestDay: day.isRestDay,
           estimatedDurationInSeconds: day.estimatedDurationInSeconds,
@@ -131,7 +134,7 @@ export class UpdateWorkoutPlan {
           exercises: day.exercises.map((exercise) => ({
             id: exercise.id,
             order: exercise.order,
-            name: exercise.name,
+            name: normalizeWorkoutLabel(exercise.name),
             sets: exercise.sets,
             reps: exercise.reps,
             restTimeInSeconds: exercise.restTimeInSeconds,

@@ -1,6 +1,7 @@
 import { NotFoundError } from "../errors/index.js";
 import { WeekDay } from "../generated/prisma/enums.js";
 import { prisma } from "../lib/db.js";
+import { normalizeWorkoutLabel } from "../lib/normalize-workout-label.js";
 
 // Data Transfer Object
 interface InputDto {
@@ -60,19 +61,19 @@ export class CreateWorkoutPlan {
       const workoutPlan = await tx.workoutPlan.create({
         data: {
           id: crypto.randomUUID(),
-          name: dto.name,
+          name: normalizeWorkoutLabel(dto.name),
           userId: dto.userId,
           isActive: true,
           workoutDays: {
             create: dto.workoutDays.map((workoutDay) => ({
-              name: workoutDay.name,
+              name: normalizeWorkoutLabel(workoutDay.name),
               weekDay: workoutDay.weekDay,
               isRestDay: workoutDay.isRest,
               estimatedDurationInSeconds: workoutDay.estimatedDurationInSeconds,
               coverImageUrl: workoutDay.coverImageUrl,
               exercises: {
                 create: workoutDay.exercises.map((exercise) => ({
-                  name: exercise.name,
+                  name: normalizeWorkoutLabel(exercise.name),
                   order: exercise.order,
                   sets: exercise.sets,
                   reps: exercise.reps,
@@ -98,16 +99,16 @@ export class CreateWorkoutPlan {
       }
       return {
         id: result.id,
-        name: result.name,
+        name: normalizeWorkoutLabel(result.name),
         workoutDays: result.workoutDays.map((day) => ({
-          name: day.name,
+          name: normalizeWorkoutLabel(day.name),
           weekDay: day.weekDay,
           isRestDay: day.isRestDay,
           estimatedDurationInSeconds: day.estimatedDurationInSeconds,
           coverImageUrl: day.coverImageUrl ?? undefined,
           exercises: day.exercises.map((exercise) => ({
             order: exercise.order,
-            name: exercise.name,
+            name: normalizeWorkoutLabel(exercise.name),
             sets: exercise.sets,
             reps: exercise.reps,
             restTimeInSeconds: exercise.restTimeInSeconds,

@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 
 import { NotFoundError } from "../errors/index.js";
+import { normalizeWorkoutLabel } from "../lib/normalize-workout-label.js";
 import { WeekDay } from "../generated/prisma/enums.js";
 import { prisma } from "../lib/db.js";
 
@@ -61,14 +62,14 @@ export class GetWorkoutDay {
 
     return {
       id: workoutDay.id,
-      name: workoutDay.name,
+      name: normalizeWorkoutLabel(workoutDay.name),
       isRest: workoutDay.isRestDay,
       coverImageUrl: workoutDay.coverImageUrl ?? undefined,
       estimatedDurationInSeconds: workoutDay.estimatedDurationInSeconds,
       weekDay: workoutDay.weekDay,
       exercises: workoutDay.exercises.map((exercise) => ({
         id: exercise.id,
-        name: exercise.name,
+        name: normalizeWorkoutLabel(exercise.name),
         order: exercise.order,
         workoutDayId: exercise.workoutDayId,
         sets: exercise.sets,
