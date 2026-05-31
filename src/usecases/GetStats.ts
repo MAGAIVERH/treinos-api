@@ -1,19 +1,8 @@
-import dayjs from "dayjs";
-
 import { NotFoundError } from "../errors/index.js";
-import { WeekDay } from "../generated/prisma/enums.js";
+import { buildConsistencyByDayFromSessions } from "../lib/consistency-by-day.js";
 import { prisma } from "../lib/db.js";
-import { toUserDateKey, userDateToUtcRange } from "../lib/user-calendar.js";
-
-const WEEKDAY_MAP: Record<number, WeekDay> = {
-  0: WeekDay.Sunday,
-  1: WeekDay.Monday,
-  2: WeekDay.Tuesday,
-  3: WeekDay.Wednesday,
-  4: WeekDay.Thursday,
-  5: WeekDay.Friday,
-  6: WeekDay.Saturday,
-};
+import { calculateWorkoutStreak } from "../lib/workout-streak.js";
+import { userDateToUtcRange } from "../lib/user-calendar.js";
 
 interface InputDto {
   userId: string;
@@ -67,24 +56,10 @@ export class GetStats {
       },
     });
 
-    const consistencyByDay: OutputDto["consistencyByDay"] = {};
-
-    sessions.forEach((session) => {
-      const dateKey = toUserDateKey(session.startedAt, timezoneOffsetMinutes);
-
-      if (!consistencyByDay[dateKey]) {
-        consistencyByDay[dateKey] = {
-          workoutDayCompleted: false,
-          workoutDayStarted: false,
-        };
-      }
-
-      consistencyByDay[dateKey].workoutDayStarted = true;
-
-      if (session.completedAt !== null) {
-        consistencyByDay[dateKey].workoutDayCompleted = true;
-      }
-    });
+    const consistencyByDay = buildConsistencyByDayFromSessions(
+      sessions,
+      timezoneOffsetMinutes,
+    );
 
     const completedSessions = sessions.filter((s) => s.completedAt !== null);
     const completedWorkoutsCount = completedSessions.length;
@@ -95,7 +70,7 @@ export class GetStats {
       return total + Math.floor(durationMs / 1000);
     }, 0);
 
-    const workoutStreak = await this.calculateStreak(
+    const workoutStreak = await calculateWorkoutStreak(
       workoutPlan.id,
       workoutPlan.workoutDays,
       dto.to,
@@ -109,58 +84,5 @@ export class GetStats {
       conclusionRate,
       totalTimeInSeconds,
     };
-  }
-
-  private async calculateStreak(
-    workoutPlanId: string,
-    workoutDays: Array<{
-      weekDay: string;
-      isRestDay: boolean;
-    }>,
-    calendarDate: string,
-    timezoneOffsetMinutes: number,
-  ): Promise<number> {
-    const planWeekDays = new Set(workoutDays.map((d) => d.weekDay));
-    const restWeekDays = new Set(workoutDays.filter((d) => d.isRestDay).map((d) => d.weekDay));
-
-    const allSessions = await prisma.workoutSession.findMany({
-      where: {
-        workoutDay: { workoutPlanId },
-        completedAt: { not: null },
-      },
-      select: { startedAt: true },
-    });
-
-    const completedDates = new Set(
-      allSessions.map((s) => toUserDateKey(s.startedAt, timezoneOffsetMinutes)),
-    );
-
-    let streak = 0;
-    let day = dayjs(calendarDate);
-
-    for (let i = 0; i < 365; i++) {
-      const weekDay = WEEKDAY_MAP[day.day()];
-
-      if (!planWeekDays.has(weekDay)) {
-        day = day.subtract(1, "day");
-        continue;
-      }
-
-      if (restWeekDays.has(weekDay)) {
-        day = day.subtract(1, "day");
-        continue;
-      }
-
-      const dateKey = day.format("YYYY-MM-DD");
-      if (completedDates.has(dateKey)) {
-        streak++;
-        day = day.subtract(1, "day");
-        continue;
-      }
-
-      break;
-    }
-
-    return streak;
   }
 }

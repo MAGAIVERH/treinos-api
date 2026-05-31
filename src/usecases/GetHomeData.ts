@@ -2,12 +2,13 @@ import dayjs from "dayjs";
 
 import { NotFoundError } from "../errors/index.js";
 import { WeekDay } from "../generated/prisma/enums.js";
+import { buildWeekConsistencyByDay } from "../lib/consistency-by-day.js";
 import { prisma } from "../lib/db.js";
 import { normalizeWorkoutLabel } from "../lib/normalize-workout-label.js";
+import { calculateWorkoutStreak } from "../lib/workout-streak.js";
 import {
   getMondayWeekDateKeys,
   getWeekUtcRange,
-  toUserDateKey,
 } from "../lib/user-calendar.js";
 
 const WEEKDAY_MAP: Record<number, WeekDay> = {
@@ -90,21 +91,13 @@ export class GetHomeData {
     });
 
     const weekDateKeys = getMondayWeekDateKeys(calendarDate);
-    const consistencyByDay: OutputDto["consistencyByDay"] = {};
+    const consistencyByDay = buildWeekConsistencyByDay(
+      weekDateKeys,
+      weekSessions,
+      timezoneOffsetMinutes,
+    );
 
-    for (const dateKey of weekDateKeys) {
-      const daySessions = weekSessions.filter(
-        (session) =>
-          toUserDateKey(session.startedAt, timezoneOffsetMinutes) === dateKey,
-      );
-
-      consistencyByDay[dateKey] = {
-        workoutDayStarted: daySessions.length > 0,
-        workoutDayCompleted: daySessions.some((session) => session.completedAt !== null),
-      };
-    }
-
-    const workoutStreak = await this.calculateStreak(
+    const workoutStreak = await calculateWorkoutStreak(
       workoutPlan.id,
       workoutPlan.workoutDays,
       calendarDate,
@@ -129,59 +122,5 @@ export class GetHomeData {
       workoutStreak,
       consistencyByDay,
     };
-  }
-
-  private async calculateStreak(
-    workoutPlanId: string,
-    workoutDays: Array<{
-      weekDay: string;
-      isRestDay: boolean;
-    }>,
-    calendarDate: string,
-    timezoneOffsetMinutes: number,
-  ): Promise<number> {
-    const planWeekDays = new Set(workoutDays.map((d) => d.weekDay));
-    const restWeekDays = new Set(workoutDays.filter((d) => d.isRestDay).map((d) => d.weekDay));
-
-    const allSessions = await prisma.workoutSession.findMany({
-      where: {
-        workoutDay: { workoutPlanId },
-        completedAt: { not: null },
-      },
-      select: { startedAt: true },
-    });
-
-    const completedDates = new Set(
-      allSessions.map((s) => toUserDateKey(s.startedAt, timezoneOffsetMinutes)),
-    );
-
-    let streak = 0;
-    let day = dayjs(calendarDate);
-
-    for (let i = 0; i < 365; i++) {
-      const weekDay = WEEKDAY_MAP[day.day()];
-
-      if (!planWeekDays.has(weekDay)) {
-        day = day.subtract(1, "day");
-        continue;
-      }
-
-      if (restWeekDays.has(weekDay)) {
-        streak++;
-        day = day.subtract(1, "day");
-        continue;
-      }
-
-      const dateKey = day.format("YYYY-MM-DD");
-      if (completedDates.has(dateKey)) {
-        streak++;
-        day = day.subtract(1, "day");
-        continue;
-      }
-
-      break;
-    }
-
-    return streak;
   }
 }
