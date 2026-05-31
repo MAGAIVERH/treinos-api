@@ -24,6 +24,7 @@ export const UpdateWorkoutSessionSchema = z.object({
 export const StatsQuerySchema = z.object({
   from: z.iso.date(),
   to: z.iso.date(),
+  tzOffset: z.coerce.number().optional().default(0),
 });
 
 export const StatsSchema = z.object({

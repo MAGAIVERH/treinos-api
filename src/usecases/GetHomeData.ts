@@ -1,26 +1,29 @@
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc.js";
 
 import { NotFoundError } from "../errors/index.js";
 import { WeekDay } from "../generated/prisma/enums.js";
 import { prisma } from "../lib/db.js";
 import { normalizeWorkoutLabel } from "../lib/normalize-workout-label.js";
+import {
+  getMondayWeekDateKeys,
+  getWeekUtcRange,
+  toUserDateKey,
+} from "../lib/user-calendar.js";
 
-dayjs.extend(utc);
-
-const WEEKDAY_MAP: Record<number, string> = {
-  0: "Sunday",
-  1: "Monday",
-  2: "Tuesday",
-  3: "Wednesday",
-  4: "Thursday",
-  5: "Friday",
-  6: "Saturday",
+const WEEKDAY_MAP: Record<number, WeekDay> = {
+  0: WeekDay.Sunday,
+  1: WeekDay.Monday,
+  2: WeekDay.Tuesday,
+  3: WeekDay.Wednesday,
+  4: WeekDay.Thursday,
+  5: WeekDay.Friday,
+  6: WeekDay.Saturday,
 };
 
 interface InputDto {
   userId: string;
   date: string;
+  timezoneOffsetMinutes?: number;
 }
 
 interface OutputDto {
@@ -47,7 +50,8 @@ interface OutputDto {
 
 export class GetHomeData {
   async execute(dto: InputDto): Promise<OutputDto> {
-    const currentDate = dayjs.utc(dto.date);
+    const timezoneOffsetMinutes = dto.timezoneOffsetMinutes ?? 0;
+    const calendarDate = dto.date;
 
     const workoutPlan = await prisma.workoutPlan.findFirst({
       where: { userId: dto.userId, isActive: true },
@@ -65,11 +69,13 @@ export class GetHomeData {
       throw new NotFoundError("Active workout plan not found");
     }
 
-    const todayWeekDay = WEEKDAY_MAP[currentDate.day()];
+    const todayWeekDay = WEEKDAY_MAP[dayjs(calendarDate).day()];
     const todayWorkoutDay = workoutPlan.workoutDays.find((day) => day.weekDay === todayWeekDay);
 
-    const weekStart = currentDate.day(0).startOf("day");
-    const weekEnd = currentDate.day(6).endOf("day");
+    const { start: weekStart, end: weekEnd } = getWeekUtcRange(
+      calendarDate,
+      timezoneOffsetMinutes,
+    );
 
     const weekSessions = await prisma.workoutSession.findMany({
       where: {
@@ -77,39 +83,36 @@ export class GetHomeData {
           workoutPlanId: workoutPlan.id,
         },
         startedAt: {
-          gte: weekStart.toDate(),
-          lte: weekEnd.toDate(),
+          gte: weekStart,
+          lte: weekEnd,
         },
       },
     });
 
-    const consistencyByDay: Record<
-      string,
-      { workoutDayCompleted: boolean; workoutDayStarted: boolean }
-    > = {};
+    const weekDateKeys = getMondayWeekDateKeys(calendarDate);
+    const consistencyByDay: OutputDto["consistencyByDay"] = {};
 
-    for (let i = 0; i < 7; i++) {
-      const day = weekStart.add(i, "day");
-      const dateKey = day.format("YYYY-MM-DD");
-
+    for (const dateKey of weekDateKeys) {
       const daySessions = weekSessions.filter(
-        (s) => dayjs.utc(s.startedAt).format("YYYY-MM-DD") === dateKey,
+        (session) =>
+          toUserDateKey(session.startedAt, timezoneOffsetMinutes) === dateKey,
       );
 
-      const workoutDayStarted = daySessions.length > 0;
-      const workoutDayCompleted = daySessions.some((s) => s.completedAt !== null);
-
-      consistencyByDay[dateKey] = { workoutDayCompleted, workoutDayStarted };
+      consistencyByDay[dateKey] = {
+        workoutDayStarted: daySessions.length > 0,
+        workoutDayCompleted: daySessions.some((session) => session.completedAt !== null),
+      };
     }
 
     const workoutStreak = await this.calculateStreak(
       workoutPlan.id,
       workoutPlan.workoutDays,
-      currentDate,
+      calendarDate,
+      timezoneOffsetMinutes,
     );
 
     return {
-      activeWorkoutPlanId: workoutPlan?.id,
+      activeWorkoutPlanId: workoutPlan.id,
       todayWorkoutDay:
         todayWorkoutDay && workoutPlan
           ? {
@@ -133,9 +136,9 @@ export class GetHomeData {
     workoutDays: Array<{
       weekDay: string;
       isRestDay: boolean;
-      sessions: Array<{ startedAt: Date; completedAt: Date | null }>;
     }>,
-    currentDate: dayjs.Dayjs,
+    calendarDate: string,
+    timezoneOffsetMinutes: number,
   ): Promise<number> {
     const planWeekDays = new Set(workoutDays.map((d) => d.weekDay));
     const restWeekDays = new Set(workoutDays.filter((d) => d.isRestDay).map((d) => d.weekDay));
@@ -149,11 +152,11 @@ export class GetHomeData {
     });
 
     const completedDates = new Set(
-      allSessions.map((s) => dayjs.utc(s.startedAt).format("YYYY-MM-DD")),
+      allSessions.map((s) => toUserDateKey(s.startedAt, timezoneOffsetMinutes)),
     );
 
     let streak = 0;
-    let day = currentDate;
+    let day = dayjs(calendarDate);
 
     for (let i = 0; i < 365; i++) {
       const weekDay = WEEKDAY_MAP[day.day()];

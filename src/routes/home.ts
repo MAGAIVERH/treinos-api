@@ -19,6 +19,9 @@ export const homeRoutes = async (app: FastifyInstance) => {
       params: z.object({
         date: z.iso.date(),
       }),
+      querystring: z.object({
+        tzOffset: z.coerce.number().optional().default(0),
+      }),
       response: {
         200: HomeDataSchema,
         401: ErrorSchema,
@@ -42,6 +45,7 @@ export const homeRoutes = async (app: FastifyInstance) => {
         const result = await getHomeData.execute({
           userId: session.user.id,
           date: request.params.date,
+          timezoneOffsetMinutes: request.query.tzOffset,
         });
 
         return reply.status(200).send(result);

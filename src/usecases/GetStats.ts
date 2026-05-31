@@ -1,25 +1,25 @@
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc.js";
 
 import { NotFoundError } from "../errors/index.js";
+import { WeekDay } from "../generated/prisma/enums.js";
 import { prisma } from "../lib/db.js";
+import { toUserDateKey, userDateToUtcRange } from "../lib/user-calendar.js";
 
-dayjs.extend(utc);
-
-const WEEKDAY_MAP: Record<number, string> = {
-  0: "Sunday",
-  1: "Monday",
-  2: "Tuesday",
-  3: "Wednesday",
-  4: "Thursday",
-  5: "Friday",
-  6: "Saturday",
+const WEEKDAY_MAP: Record<number, WeekDay> = {
+  0: WeekDay.Sunday,
+  1: WeekDay.Monday,
+  2: WeekDay.Tuesday,
+  3: WeekDay.Wednesday,
+  4: WeekDay.Thursday,
+  5: WeekDay.Friday,
+  6: WeekDay.Saturday,
 };
 
 interface InputDto {
   userId: string;
   from: string;
   to: string;
+  timezoneOffsetMinutes?: number;
 }
 
 interface OutputDto {
@@ -38,8 +38,9 @@ interface OutputDto {
 
 export class GetStats {
   async execute(dto: InputDto): Promise<OutputDto> {
-    const fromDate = dayjs.utc(dto.from).startOf("day");
-    const toDate = dayjs.utc(dto.to).endOf("day");
+    const timezoneOffsetMinutes = dto.timezoneOffsetMinutes ?? 0;
+    const fromRange = userDateToUtcRange(dto.from, timezoneOffsetMinutes);
+    const toRange = userDateToUtcRange(dto.to, timezoneOffsetMinutes);
 
     const workoutPlan = await prisma.workoutPlan.findFirst({
       where: { userId: dto.userId, isActive: true },
@@ -60,19 +61,16 @@ export class GetStats {
           workoutPlanId: workoutPlan.id,
         },
         startedAt: {
-          gte: fromDate.toDate(),
-          lte: toDate.toDate(),
+          gte: fromRange.start,
+          lte: toRange.end,
         },
       },
     });
 
-    const consistencyByDay: Record<
-      string,
-      { workoutDayCompleted: boolean; workoutDayStarted: boolean }
-    > = {};
+    const consistencyByDay: OutputDto["consistencyByDay"] = {};
 
     sessions.forEach((session) => {
-      const dateKey = dayjs.utc(session.startedAt).format("YYYY-MM-DD");
+      const dateKey = toUserDateKey(session.startedAt, timezoneOffsetMinutes);
 
       if (!consistencyByDay[dateKey]) {
         consistencyByDay[dateKey] = {
@@ -93,15 +91,15 @@ export class GetStats {
     const conclusionRate = sessions.length > 0 ? completedWorkoutsCount / sessions.length : 0;
 
     const totalTimeInSeconds = completedSessions.reduce((total, session) => {
-      const start = dayjs.utc(session.startedAt);
-      const end = dayjs.utc(session.completedAt!);
-      return total + end.diff(start, "second");
+      const durationMs = session.completedAt!.getTime() - session.startedAt.getTime();
+      return total + Math.floor(durationMs / 1000);
     }, 0);
 
     const workoutStreak = await this.calculateStreak(
       workoutPlan.id,
       workoutPlan.workoutDays,
-      toDate,
+      dto.to,
+      timezoneOffsetMinutes,
     );
 
     return {
@@ -119,7 +117,8 @@ export class GetStats {
       weekDay: string;
       isRestDay: boolean;
     }>,
-    currentDate: dayjs.Dayjs,
+    calendarDate: string,
+    timezoneOffsetMinutes: number,
   ): Promise<number> {
     const planWeekDays = new Set(workoutDays.map((d) => d.weekDay));
     const restWeekDays = new Set(workoutDays.filter((d) => d.isRestDay).map((d) => d.weekDay));
@@ -133,11 +132,11 @@ export class GetStats {
     });
 
     const completedDates = new Set(
-      allSessions.map((s) => dayjs.utc(s.startedAt).format("YYYY-MM-DD")),
+      allSessions.map((s) => toUserDateKey(s.startedAt, timezoneOffsetMinutes)),
     );
 
     let streak = 0;
-    let day = currentDate;
+    let day = dayjs(calendarDate);
 
     for (let i = 0; i < 365; i++) {
       const weekDay = WEEKDAY_MAP[day.day()];
