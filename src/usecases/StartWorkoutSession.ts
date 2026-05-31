@@ -1,5 +1,6 @@
 import {
   NotFoundError,
+  RestDayWorkoutError,
   SessionAlreadyStartedError,
   WorkoutPlanNotActiveError,
 } from "../errors/index.js";
@@ -39,6 +40,10 @@ export class StartWorkoutSession {
 
     if (!workoutDay) {
       throw new NotFoundError("Workout day not found");
+    }
+
+    if (workoutDay.isRestDay) {
+      throw new RestDayWorkoutError("Workout cannot be started on a rest day");
     }
 
     const existingSession = await prisma.workoutSession.findFirst({

@@ -5,6 +5,7 @@ import z from "zod";
 
 import {
   NotFoundError,
+  RestDayWorkoutError,
   SessionAlreadyStartedError,
   WorkoutPlanNotActiveError,
 } from "../errors/index.js";
@@ -293,6 +294,13 @@ export const workoutPlanRoutes = async (app: FastifyInstance) => {
           return reply.status(409).send({
             error: error.message,
             code: "SESSION_ALREADY_STARTED_ERROR",
+          });
+        }
+
+        if (error instanceof RestDayWorkoutError) {
+          return reply.status(422).send({
+            error: error.message,
+            code: "REST_DAY_WORKOUT_ERROR",
           });
         }
 

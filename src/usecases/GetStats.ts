@@ -54,16 +54,28 @@ export class GetStats {
           lte: toRange.end,
         },
       },
+      include: {
+        workoutDay: {
+          select: { isRestDay: true },
+        },
+      },
     });
 
+    const trainingSessions = sessions.filter((session) => !session.workoutDay.isRestDay);
+
     const consistencyByDay = buildConsistencyByDayFromSessions(
-      sessions,
+      trainingSessions.map((session) => ({
+        startedAt: session.startedAt,
+        completedAt: session.completedAt,
+        isRestDay: session.workoutDay.isRestDay,
+      })),
       timezoneOffsetMinutes,
     );
 
-    const completedSessions = sessions.filter((s) => s.completedAt !== null);
+    const completedSessions = trainingSessions.filter((s) => s.completedAt !== null);
     const completedWorkoutsCount = completedSessions.length;
-    const conclusionRate = sessions.length > 0 ? completedWorkoutsCount / sessions.length : 0;
+    const conclusionRate =
+      trainingSessions.length > 0 ? completedWorkoutsCount / trainingSessions.length : 0;
 
     const totalTimeInSeconds = completedSessions.reduce((total, session) => {
       const durationMs = session.completedAt!.getTime() - session.startedAt.getTime();

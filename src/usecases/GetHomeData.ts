@@ -88,12 +88,21 @@ export class GetHomeData {
           lte: weekEnd,
         },
       },
+      include: {
+        workoutDay: {
+          select: { isRestDay: true },
+        },
+      },
     });
 
     const weekDateKeys = getMondayWeekDateKeys(calendarDate);
     const consistencyByDay = buildWeekConsistencyByDay(
       weekDateKeys,
-      weekSessions,
+      weekSessions.map((session) => ({
+        startedAt: session.startedAt,
+        completedAt: session.completedAt,
+        isRestDay: session.workoutDay.isRestDay,
+      })),
       timezoneOffsetMinutes,
     );
 

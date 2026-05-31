@@ -8,6 +8,7 @@ export type ConsistencyDay = {
 type SessionLike = {
   startedAt: Date;
   completedAt: Date | null;
+  isRestDay?: boolean;
 };
 
 export function buildConsistencyByDayFromSessions(
@@ -17,6 +18,8 @@ export function buildConsistencyByDayFromSessions(
   const consistencyByDay: Record<string, ConsistencyDay> = {};
 
   for (const session of sessions) {
+    if (session.isRestDay) continue;
+
     const dateKey = toUserDateKey(session.startedAt, timezoneOffsetMinutes);
 
     if (!consistencyByDay[dateKey]) {

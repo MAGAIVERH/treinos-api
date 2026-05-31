@@ -18,3 +18,10 @@ export class SessionAlreadyStartedError extends Error {
     this.name = "SessionAlreadyStartedError";
   }
 }
+
+export class RestDayWorkoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RestDayWorkoutError";
+  }
+}

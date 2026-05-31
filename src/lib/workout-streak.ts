@@ -34,7 +34,7 @@ export async function calculateWorkoutStreak(
 
   const allSessions = await prisma.workoutSession.findMany({
     where: {
-      workoutDay: { workoutPlanId },
+      workoutDay: { workoutPlanId, isRestDay: false },
       completedAt: { not: null },
     },
     select: { startedAt: true },
